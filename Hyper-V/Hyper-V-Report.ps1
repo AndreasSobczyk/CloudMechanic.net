@@ -52,6 +52,8 @@ Param(
     [Parameter(Mandatory=$true,HelpMessage='Please provide a array with hostname for the hosts you wish to create reports for')][Array]$Nodes,
     [Parameter(Mandatory=$true,HelpMessage='Please provide administrative credentials for the Hyper-V Hosts')][PSCredential]$Credential
 )
+$ErrorActionPreference = "SilentlyContinue"
+
 
 if(!($OutputPath.EndsWith("\"))){
     $OutputPath = $OutputPath + "\"
