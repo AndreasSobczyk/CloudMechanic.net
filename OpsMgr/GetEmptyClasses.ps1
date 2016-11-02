@@ -1,4 +1,8 @@
-﻿
+﻿################################################################
+#   Author: Andreas Sobczyk, CloudMechanic.net
+#
+#   Get Empty classes from Management Packs
+################################################################
 
 ## Get all management packs starting with Contoso.
 $MPs = Get-SCOMManagementPack -name Contoso*
