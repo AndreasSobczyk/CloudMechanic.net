@@ -14,7 +14,7 @@ Foreach($MP in $MPs){
 
     foreach($Class in $Classes){
         $ClassInstance = $null
-        $ClassInstance = Get-SCClassInstance -Class $class
+        $ClassInstance = Get-SCOMClassInstance -Class $class
 
         ## If you want you can change the number of class instances to sort on.
         if($ClassInstance.Count -le 0){
@@ -23,4 +23,4 @@ Foreach($MP in $MPs){
     }
 }
 
-$Overview | Format-Table Name,Displayname,Managementpack
+$Overview | Format-Table Name,Displayname,ManagementPackName
