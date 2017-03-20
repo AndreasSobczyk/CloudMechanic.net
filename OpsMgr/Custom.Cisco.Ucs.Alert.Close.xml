@@ -1,0 +1,297 @@
+<ManagementPack ContentReadable="true" SchemaVersion="2.0" OriginalSchemaVersion="2.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+  <Manifest>
+    <Identity>
+      <ID>Custom.Cisco.Ucs.Alert.Close</ID>
+      <Version>4.1.1.0</Version>
+    </Identity>
+    <Name>Custom Cisco Ucs Alert Close</Name>
+    <References>
+      <Reference Alias="SCLibrary">
+        <ID>Microsoft.SystemCenter.Library</ID>
+        <Version>7.0.8432.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Windows">
+        <ID>Microsoft.Windows.Library</ID>
+        <Version>7.5.8501.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Health">
+        <ID>System.Health.Library</ID>
+        <Version>7.0.8432.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="System">
+        <ID>System.Library</ID>
+        <Version>7.5.8501.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="Perf">
+        <ID>System.Performance.Library</ID>
+        <Version>7.0.8432.0</Version>
+        <PublicKeyToken>31bf3856ad364e35</PublicKeyToken>
+      </Reference>
+      <Reference Alias="CUL">
+        <ID>Cisco.Ucs.Core.Library</ID>
+        <Version>4.1.1.0</Version>
+        <PublicKeyToken>6c9e6076cdf2c87a</PublicKeyToken>
+      </Reference>
+    </References>
+  </Manifest>
+  <TypeDefinitions>
+    <ModuleTypes>
+		<WriteActionModuleType ID="Custom.Cisco.Ucs.UpdateAndCloseAlert.WriteActionModuleType" Accessibility="Public" Batching="false">
+        <Configuration>
+          <xsd:element minOccurs="1" name="TimeoutSeconds" type="xsd:integer" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+          <xsd:element minOccurs="1" name="Logging" type="xsd:string" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+          <xsd:element minOccurs="1" name="EventQueryIntervalInSeconds" type="xsd:integer" xmlns:xsd="http://www.w3.org/2001/XMLSchema" />
+        </Configuration>
+        <OverrideableParameters>
+          <OverrideableParameter ID="TimeoutSeconds" Selector="$Config/TimeoutSeconds$" ParameterType="int" />
+          <OverrideableParameter ID="Logging" Selector="$Config/Logging$" ParameterType="string" />
+          <OverrideableParameter ID="EventQueryIntervalInSeconds" Selector="$Config/EventQueryIntervalInSeconds$" ParameterType="int" />
+        </OverrideableParameters>
+        <ModuleImplementation Isolation="Any">
+          <Composite>
+            <MemberModules>
+              <WriteAction ID="PowerShellWriteAction" TypeID="Windows!Microsoft.Windows.PowerShellWriteAction">
+                <ScriptName>Custom.Cisco.Ucs.UpdateAndCloseAlert.WriteAction.ps1</ScriptName>
+                <ScriptBody>
+Param(
+$Logging,
+$RuleName,
+$EventQueryIntervalInSeconds
+)
+
+# Declaring Constants
+######
+########################################################################################
+Set-Variable -Name cCODE -Value "19900"
+Set-Variable -Name cLOGINGCODE -Value "19901"
+
+Set-Variable -Name cERROR -Value "1"
+Set-Variable -Name cWARNING -Value "2"
+Set-Variable -Name cINFORMATION -Value "4"
+
+Set-Variable -Name cSERVICENAME -Value "CiscoUcsMonitoringService"
+
+Set-Variable -Name cSCRIPTNAME -Value "Cisco.Ucs.UpdateAndCloseAlert.WriteAction.ps1"
+########################################################################################
+
+$setupKey = Get-Item -Path "HKLM:\Software\Microsoft\Microsoft Operations Manager\3.0\Setup"
+$installDirectory = $setupKey.GetValue("InstallDirectory") | Split-Path
+$psmPath = $installdirectory + "\Powershell\OperationsManager\OperationsManager.psm1"
+
+Import-Module $psmPath
+#Import-Module OperationsManager
+
+
+#Referring MOM API
+$oScriptAPI = New-Object -ComObject 'MOM.ScriptAPI'
+
+#Creating Logs
+Function LogEvent ($sMessage, $iEventType, $iErrorEventId)
+{
+	$oScriptAPI.LogScriptEvent("Cisco UCS Management Pack [" + $cSCRIPTNAME + "]", $iErrorEventId, $iEventType, $sMessage)
+}
+
+
+  
+Function Main
+{
+
+	Try
+	{
+		$rule = Get-SCOMRule -Name $RuleName
+		$Events = Get-SCOMEvent -Rule $rule | Sort-Object -Descending TimeAdded | Where {$_.TimeAdded -gt (Get-Date).ToUniversalTime().AddSeconds(-$EventQueryIntervalInSeconds)} | Sort-Object TimeAdded
+	}
+	Catch [system.exception]
+	{
+		LogEvent $_.Exception.Message $cERROR $cCODE
+		Exit
+	}
+    
+    #Custom Changes
+    $ActiveAlerts = Get-SCOMAlert -ResolutionState (0..254)
+
+	Foreach ( $Event in $Events)
+	{
+		Try
+		{
+			$EventId = $Event.Number
+			$Publisher = $Event.PublisherName
+			$EventData = [xml]$Event.EventData
+			$EventDataStr = ([xml]$Event.EventData).OuterXml
+
+			$EventData1 = $EventData.DataItem.EventData.Data[0]
+			$EventData2 = $EventData.DataItem.EventData.Data[1]
+			$EventData3 = $EventData.DataItem.EventData.Data[2]
+			$EventData4 = $EventData.DataItem.EventData.Data[3]
+			$EventData5 = $EventData.DataItem.EventData.Data[4]
+			$EventData6 = $EventData.DataItem.EventData.Data[5]
+			$EventData7 = $EventData.DataItem.EventData.Data[6]
+			$EventData8 = $EventData.DataItem.EventData.Data[7]
+			$EventData9 = $EventData.DataItem.EventData.Data[8]
+			$EventData10 = $EventData.DataItem.EventData.Data[9]
+			$EventData11 = $EventData.DataItem.EventData.Data[10]
+			$EventData12 = $EventData.DataItem.EventData.Data[11]
+			$EventData13 = $EventData.DataItem.EventData.Data[12]
+			$EventData14 = $EventData.DataItem.EventData.Data[13]
+			$EventData15 = $EventData.DataItem.EventData.Data[14]
+
+			if($Logging -eq "true")
+			{
+				LogEvent "Processing: Event ID[$EventId], Publisher[$Publisher], EventData [$EventDataStr]" $cINFORMATION $cCODE
+			}
+			#Case 1: UCSM &amp; UCS Central Close Alert
+
+			if( $EventId -eq 17102 -and $Publisher -eq "FaultData" -and $EventData15 -eq "AlertClosed")
+			{
+				$scomActiveAlerts = $ActiveAlerts | Where-Object {$_.CustomField1 -eq "$EventData2" -and $_.CustomField10 -eq "$EventData3" -and $_.CustomField4 -eq "$EventData7" -and $_.CustomField6 -eq "$EventData9"}
+			}
+
+			#Case 2 : UCSM Server Power State Close Alert
+			Elseif( $EventId -eq 17102 -and $Publisher -eq "ServerPowerState" -and $EventData8 -eq "AlertClosed" )
+			{
+				$scomActiveAlerts = $ActiveAlerts | Where-Object {$_.CustomField1 -eq "$EventData2" -and $_.CustomField5 -eq "$EventData3" -and $_.CustomField4 -eq "ServerPowerState"}
+			}
+
+			#Case 3 : UCSM &amp; UCS Central Login Failure Close Alert
+			Elseif ( $EventId -eq 17102 -and $Publisher -eq "LoginStatus" -and $EventData6 -eq "AlertClosed" )
+			{
+				$scomActiveAlerts = $ActiveAlerts | Where-Object {$_.CustomField1 -eq "$EventData2" -and $_.CustomField4 -eq "LoginStatus" }
+			}
+
+			#Case 4 : IMC Close Alert
+			Elseif ( $EventId -eq 17102 -and $Publisher -eq "FaultData" ) 
+			{
+				$scomActiveAlerts = $ActiveAlerts | Where-Object {$_.CustomField1 -eq "$EventData2" -and $_.CustomField10 -eq "$EventData12" -and $_.CustomField4 -eq "$EventData5" -and $_.CustomField6 -eq "$EventData8"}
+			}
+
+			#Case 5: IMC Version Check and Login Failure Alert Close
+			Elseif( ($EventId -eq 19993 -or $EventId -eq 19985) -and ($Publisher -eq "LoginFailed" -or $Publisher -eq "VersionCheckFailed" ) -and $EventData4 -eq "AlertClosed" )
+			{
+				$scomActiveAlerts = $ActiveAlerts | Where-Object {$_.CustomField1 -eq "$EventData2" -and $_.CustomField2 -eq "$EventData3" -and $_.Description -ne "$EventData1"}
+			}
+
+			if($scomActiveAlerts -ne $null)
+			{
+				$scomActiveAlerts | Set-SCOMAlert -ResolutionState 255
+				if($Logging -eq "true")
+				{
+					$AlertName = $scomActiveAlerts[0].Name
+					$AlertPath = $scomActiveAlerts[0].MonitoringObjectPath
+					$CustomField1 = $scomActiveAlerts[0].CustomField1
+					$CustomField2 = $scomActiveAlerts[0].CustomField2
+					$CustomField3 = $scomActiveAlerts[0].CustomField3
+					$CustomField4 = $scomActiveAlerts[0].CustomField4
+					$CustomField5 = $scomActiveAlerts[0].CustomField5
+					$CustomField6 = $scomActiveAlerts[0].CustomField6
+					$CustomField7 = $scomActiveAlerts[0].CustomField7
+					$CustomField8 = $scomActiveAlerts[0].CustomField8
+					$CustomField9 = $scomActiveAlerts[0].CustomField9
+					$CustomField10 = $scomActiveAlerts[0].CustomField10
+					LogEvent "Closed Alert: Name [$AlertName], Path [$AlertPath], Custom Field 1 [$CustomField1], Custom Field 2 [$CustomField2], Custom Field 3 [$CustomField3], Custom Field 4 [$CustomField4], Custom Field 5 [$CustomField5], Custom Field 6 [$CustomField6], Custom Field 7 [$CustomField7], Custom Field 8 [$CustomField8], Custom Field 9 [$CustomField9], Custom Field 10 [$CustomField10]" $cINFORMATION $cCODE
+				}
+			}
+			$scomActiveAlerts = $null
+
+
+
+			#Case 6 : UCSM &amp; UCS Central Alert Modified
+			If( $EventId -eq 17101 -and $Publisher -eq "FaultData" -and $EventData15 -eq "AlertModified" ) 
+			{
+				$scomActiveAlerts = $ActiveAlerts | Where-Object {$_.CustomField1 -eq "$EventData2" -and $_.CustomField10 -eq "$EventData3" -and $_.CustomField4 -eq "$EventData7" -and $_.CustomField6 -eq "$EventData9"}
+
+				if($scomActiveAlerts -ne $null)
+				{
+					$scomActiveAlerts | Set-SCOMAlert -CustomField2 "$EventData5" -CustomField3 "$EventData14"
+					if($Logging -eq "true")
+					{
+						$AlertName = $scomActiveAlerts[0].Name
+						$AlertPath = $scomActiveAlerts[0].MonitoringObjectPath
+						$CustomField1 = $scomActiveAlerts[0].CustomField1
+						$CustomField2 = $scomActiveAlerts[0].CustomField2
+						$CustomField3 = $scomActiveAlerts[0].CustomField3
+						$CustomField4 = $scomActiveAlerts[0].CustomField4
+						$CustomField5 = $scomActiveAlerts[0].CustomField5
+						$CustomField6 = $scomActiveAlerts[0].CustomField6
+						$CustomField7 = $scomActiveAlerts[0].CustomField7
+						$CustomField8 = $scomActiveAlerts[0].CustomField8
+						$CustomField9 = $scomActiveAlerts[0].CustomField9
+						$CustomField10 = $scomActiveAlerts[0].CustomField10
+						LogEvent "Updated Alert: Name [$AlertName], Path [$AlertPath], Custom Field 1 [$CustomField1], Custom Field 2 [$CustomField2], Custom Field 3 [$CustomField3], Custom Field 4 [$CustomField4], Custom Field 5 [$CustomField5], Custom Field 6 [$CustomField6], Custom Field 7 [$CustomField7], Custom Field 8 [$CustomField8], Custom Field 9 [$CustomField9], Custom Field 10 [$CustomField10]" $cINFORMATION $cCODE
+					}
+				}
+			}
+			$scomActiveAlerts = $null
+		}
+		Catch [system.exception]
+		{
+			LogEvent $_.Exception.Message $cERROR $cCODE
+		}
+	}
+}
+Main
+</ScriptBody>
+                <Parameters>
+                  <Parameter>
+                    <Name>Logging</Name>
+                    <Value>$Config/Logging$</Value>
+                  </Parameter>
+                  <Parameter>
+                    <Name>RuleName</Name>
+                    <Value>Cisco.Ucs.Watcher.UCSFault.Event.Collection.Rule</Value>
+                  </Parameter>
+                  <Parameter>
+                    <Name>EventQueryIntervalInSeconds</Name>
+                    <Value>$Config/EventQueryIntervalInSeconds$</Value>
+                  </Parameter>
+                </Parameters>
+                <TimeoutSeconds>$Config/TimeoutSeconds$</TimeoutSeconds>
+              </WriteAction>
+            </MemberModules>
+            <Composition>
+              <Node ID="PowerShellWriteAction" />
+            </Composition>
+          </Composite>
+        </ModuleImplementation>
+        <InputType>System!System.BaseData</InputType>
+      </WriteActionModuleType>
+	</ModuleTypes>
+	</TypeDefinitions>
+	<Monitoring>
+	    <Rules>
+	      <Rule ID="Custom.Cisco.Ucs.Library.UpdateAndCloseAlert.Rule" Enabled="true" Target="SCLibrary!Microsoft.SystemCenter.AllManagementServersPool" ConfirmDelivery="false" Remotable="true" Priority="Normal" DiscardLevel="100">
+			<Category>Operations</Category>
+			<DataSources>
+			  <DataSource ID="DS" TypeID="System!System.SimpleScheduler">
+				<IntervalSeconds>90</IntervalSeconds>
+				<SyncTime />
+			  </DataSource>
+			</DataSources>
+			<WriteActions>
+			  <WriteAction ID="WA" TypeID="Custom.Cisco.Ucs.UpdateAndCloseAlert.WriteActionModuleType">
+				<TimeoutSeconds>60</TimeoutSeconds>
+				<Logging>false</Logging>
+				<EventQueryIntervalInSeconds>120</EventQueryIntervalInSeconds>
+			  </WriteAction>
+			</WriteActions>
+		  </Rule>
+		</Rules>
+	</Monitoring>
+	 <LanguagePacks>
+		<LanguagePack ID="ENU" IsDefault="true">
+			<DisplayStrings>
+				<DisplayString ElementID="Custom.Cisco.Ucs.Alert.Close">
+				  <Name>Custom Cisco Ucs Alert Close</Name>
+				  <Description>This management pack fixes performance for the rule Cisco.Ucs.Library.UpdateAndCloseAlert.Rule to run faster and work better in large environments</Description>
+				</DisplayString>
+				<DisplayString ElementID="Custom.Cisco.Ucs.Library.UpdateAndCloseAlert.Rule">
+				<Name>Custom Cisco UCS Update and Close Alert Rule</Name>
+				<Description>Custom Cisco UCS Update and Close Alert Rule</Description>
+				</DisplayString>
+			</DisplayStrings>
+		</LanguagePack>
+	 </LanguagePacks>
+</ManagementPack>
